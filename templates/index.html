@@ -74,9 +74,19 @@
             <span>Add Income</span>
           </button>
 
-          <button id="btnExportCsv" class="btn btn-glass icon-btn" title="Export CSV Report">
-            <i class="fa-solid fa-file-arrow-down"></i>
+          <button id="btnExportCsv" class="btn btn-glass icon-btn" title="Export CSV Spreadsheet">
+            <i class="fa-solid fa-file-csv"></i>
           </button>
+
+          <!-- Permanent Backup & Restore buttons -->
+          <button id="btnExportBackup" class="btn btn-glass icon-btn" title="Download JSON Backup (Permanent Save)">
+            <i class="fa-solid fa-download"></i>
+          </button>
+
+          <button id="btnImportBackup" class="btn btn-glass icon-btn" title="Import / Restore Backup File">
+            <i class="fa-solid fa-upload"></i>
+          </button>
+          <input type="file" id="importBackupInput" accept=".json" style="display: none;">
 
           <button id="btnResetDemo" class="btn btn-glass icon-btn" title="Reset to Sample Demo Data">
             <i class="fa-solid fa-rotate-right"></i>

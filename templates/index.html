@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinPortfolio | Personal Expense & Monthly Savings Goal Command Center</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for clean UI -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js for interactive analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Canvas Confetti for celebratory goal achievements -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Header Navigation -->
+  <header class="top-nav">
+    <div class="nav-container">
+      <div class="brand-section">
+        <div class="brand-icon">
+          <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div class="brand-text">
+          <h1>FinPortfolio<span class="brand-accent">.ai</span></h1>
+          <p class="brand-subtitle">Expense & Monthly Goal Tracker</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="live-clock-badge">
+          <i class="fa-regular fa-clock"></i>
+          <span id="headerLiveClock">--:--:--</span>
+          <span class="date-sep">•</span>
+          <span id="headerLiveDate">Today</span>
+        </div>
+
+        <!-- INR vs USD Currency Switcher -->
+        <div class="currency-toggle-wrap" title="Currency Converter (1 USD = ₹83.50)">
+          <button type="button" class="currency-btn active" id="btnCurrencyINR" data-currency="INR">
+            <span>₹ INR</span>
+          </button>
+          <button type="button" class="currency-btn" id="btnCurrencyUSD" data-currency="USD">
+            <span>$ USD</span>
+          </button>
+        </div>
+
+        <div class="nav-actions">
+          <button id="btnOpenGoalModal" class="btn btn-outline" title="Adjust Monthly Goal">
+            <i class="fa-solid fa-bullseye"></i>
+            <span>Set Goal</span>
+          </button>
+          
+          <button id="btnOpenExpenseModal" class="btn btn-danger" title="Record New Expense">
+            <i class="fa-solid fa-arrow-trend-down"></i>
+            <span>Add Expense</span>
+          </button>
+
+          <button id="btnOpenIncomeModal" class="btn btn-success" title="Record New Income">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+            <span>Add Income</span>
+          </button>
+
+          <button id="btnExportCsv" class="btn btn-glass icon-btn" title="Export CSV Report">
+            <i class="fa-solid fa-file-arrow-down"></i>
+          </button>
+
+          <button id="btnResetDemo" class="btn btn-glass icon-btn" title="Reset to Sample Demo Data">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Wrapper -->
+  <main class="main-wrapper">
+    <!-- Row 1: KPI Stat Cards -->
+    <section class="kpi-grid">
+      <!-- Card 1: Net Portfolio Balance -->
+      <div class="glass-card kpi-card net-worth-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Total Net Balance</span>
+          <div class="kpi-icon-wrap icon-indigo">
+            <i class="fa-solid fa-wallet"></i>
+          </div>
+        </div>
+        <div class="kpi-value-wrap">
+          <h2 class="kpi-value mono" id="kpiNetBalance">₹0.00</h2>
+        </div>
+        <div class="kpi-footer">
+          <span class="kpi-badge badge-neutral" id="kpiBalanceStatus">
+            <i class="fa-solid fa-shield-halved"></i> All-Time Liquidity
+          </span>
+        </div>
+      </div>
+
+      <!-- Card 2: Total Income this month -->
+      <div class="glass-card kpi-card income-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Month Earnings</span>
+          <div class="kpi-icon-wrap icon-emerald">
+            <i class="fa-solid fa-arrow-down-left"></i>
+          </div>
+        </div>
+        <div class="kpi-value-wrap">
+          <h2 class="kpi-value mono text-emerald" id="kpiMonthIncome">₹0.00</h2>
+        </div>
+        <div class="kpi-footer">
+          <span class="kpi-badge badge-emerald">
+            <i class="fa-solid fa-circle-check"></i> Total Inflow
+          </span>
+          <span class="kpi-subtext" id="kpiIncomeMonthLabel">This Month</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Total Expenses this month -->
+      <div class="glass-card kpi-card expense-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Month Expenses</span>
+          <div class="kpi-icon-wrap icon-rose">
+            <i class="fa-solid fa-arrow-up-right"></i>
+          </div>
+        </div>
+        <div class="kpi-value-wrap">
+          <h2 class="kpi-value mono text-rose" id="kpiMonthExpense">₹0.00</h2>
+        </div>
+        <div class="kpi-footer">
+          <span class="kpi-badge badge-rose" id="kpiWasteBadge" title="Money spent on unnecessary or impulse items">
+            <i class="fa-solid fa-fire"></i> Waste: <strong id="kpiWasteAmount" class="mono">₹0</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- Card 4: Net Savings / Profit this month -->
+      <div class="glass-card kpi-card savings-card">
+        <div class="kpi-header">
+          <span class="kpi-title">Net Savings / Profit</span>
+          <div class="kpi-icon-wrap icon-cyan">
+            <i class="fa-solid fa-piggy-bank"></i>
+          </div>
+        </div>
+        <div class="kpi-value-wrap">
+          <h2 class="kpi-value mono text-cyan" id="kpiMonthSavings">₹0.00</h2>
+        </div>
+        <div class="kpi-footer">
+          <span class="kpi-badge badge-cyan" id="kpiSavingsRate">
+            <i class="fa-solid fa-chart-line"></i> Profit Margin
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 2: MASTER MONTHLY SAVINGS GOAL & LIVE COUNTDOWN TIMER -->
+    <section class="goal-timer-section">
+      <div class="glass-card goal-master-card">
+        <div class="goal-left-col">
+          <div class="goal-badge-strip">
+            <span class="pill pill-indigo">
+              <i class="fa-solid fa-bullseye"></i> Monthly Savings Target
+            </span>
+            <span class="pill pill-soft" id="goalMonthNameDisplay">Current Month</span>
+            <button class="pill-btn" id="btnQuickEditGoal" title="Change target amount">
+              <i class="fa-solid fa-pen-to-square"></i> Edit Target
+            </button>
+          </div>
+
+          <div class="goal-amount-overview">
+            <div class="goal-stat-box">
+              <span class="stat-label">Target Goal</span>
+              <h3 class="stat-num mono" id="goalTargetAmount">₹10,000</h3>
+            </div>
+            <div class="stat-divider">/</div>
+            <div class="goal-stat-box">
+              <span class="stat-label">Actual Saved</span>
+              <h3 class="stat-num mono text-emerald" id="goalCurrentSaved">₹0</h3>
+            </div>
+          </div>
+
+          <!-- Dynamic Remaining Goal Banner (Requested Feature!) -->
+          <div class="goal-status-banner" id="goalStatusBanner">
+            <div class="banner-icon-slot" id="goalBannerIcon">
+              <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+            <div class="banner-content">
+              <div class="banner-headline">
+                <span id="goalRemainingPrefix">Remaining to hit goal:</span>
+                <strong id="goalRemainingAmount" class="mono text-glowing">₹10,000</strong>
+              </div>
+              <p class="banner-subtext" id="goalDailyVelocityTip">
+                Add daily income or cut unnecessary spending to reach your goal!
+              </p>
+            </div>
+          </div>
+
+          <!-- Goal Progress Bar -->
+          <div class="goal-progress-container">
+            <div class="goal-progress-labels">
+              <span>Goal Completion</span>
+              <span class="mono font-bold" id="goalPercentText">0.0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar-fill" id="goalProgressBar" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Col: Live Month Countdown Timer & Velocity Clock -->
+        <div class="goal-right-col">
+          <div class="timer-header">
+            <div class="timer-title-wrap">
+              <i class="fa-solid fa-stopwatch-20"></i>
+              <h4>Month Countdown Timer</h4>
+            </div>
+            <span class="timer-subtitle">Time left to achieve your ₹<span id="timerGoalInline">10,000</span> goal</span>
+          </div>
+
+          <!-- Digital Countdown Blocks -->
+          <div class="countdown-timer-grid">
+            <div class="countdown-block">
+              <div class="time-digit-box">
+                <span class="digit-value mono" id="timerDays">00</span>
+              </div>
+              <span class="digit-label">DAYS</span>
+            </div>
+
+            <div class="countdown-colon">:</div>
+
+            <div class="countdown-block">
+              <div class="time-digit-box">
+                <span class="digit-value mono" id="timerHours">00</span>
+              </div>
+              <span class="digit-label">HOURS</span>
+            </div>
+
+            <div class="countdown-colon">:</div>
+
+            <div class="countdown-block">
+              <div class="time-digit-box">
+                <span class="digit-value mono" id="timerMinutes">00</span>
+              </div>
+              <span class="digit-label">MINS</span>
+            </div>
+
+            <div class="countdown-colon">:</div>
+
+            <div class="countdown-block">
+              <div class="time-digit-box">
+                <span class="digit-value mono text-cyan" id="timerSeconds">00</span>
+              </div>
+              <span class="digit-label">SECS</span>
+            </div>
+          </div>
+
+          <!-- Daily Target Needed Card -->
+          <div class="daily-target-card">
+            <div class="target-left">
+              <i class="fa-solid fa-calculator text-amber"></i>
+              <span class="target-title">Required Daily Savings:</span>
+            </div>
+            <div class="target-right">
+              <span class="daily-amount mono text-amber" id="goalDailyNeeded">₹0.00</span>
+              <span class="daily-unit">/ day</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 3: Charts & Visual Intelligence -->
+    <section class="charts-grid">
+      <!-- Trend Chart -->
+      <div class="glass-card chart-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <i class="fa-solid fa-chart-line text-indigo"></i>
+            <h3>Monthly Cash Flow & Savings Trend</h3>
+          </div>
+          <span class="card-tag">Daily Inflow vs Outflow</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="cashflowTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Category Donut Chart -->
+      <div class="glass-card chart-card donut-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <i class="fa-solid fa-chart-pie text-rose"></i>
+            <h3>Expense Breakdown</h3>
+          </div>
+          <span class="card-tag">By Category</span>
+        </div>
+        <div class="chart-wrapper donut-wrapper">
+          <canvas id="categoryDonutChart"></canvas>
+          <div id="noExpensePlaceholder" class="empty-chart-note" style="display: none;">
+            <i class="fa-solid fa-receipt"></i>
+            <p>No expenses recorded this month yet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 4: Transaction Ledger ("Kisko diya, kitna diya, time kya hai") -->
+    <section class="ledger-section">
+      <div class="glass-card ledger-card">
+        <div class="ledger-header">
+          <div class="ledger-title-group">
+            <i class="fa-solid fa-receipt text-cyan"></i>
+            <div>
+              <h3>Transaction History & Waste Audit</h3>
+              <p class="ledger-subtitle">Detailed record of recipient, exact time, category, and impulse spends</p>
+            </div>
+          </div>
+
+          <div class="ledger-controls">
+            <!-- Search by recipient / category -->
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" id="txSearchInput" placeholder="Search recipient, party, notes..." autocomplete="off">
+              <button id="btnClearSearch" class="btn-clear" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Quick Add Button -->
+            <button id="btnQuickAddTx" class="btn btn-primary">
+              <i class="fa-solid fa-plus"></i> New Transaction
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs-bar">
+          <div class="tabs-list">
+            <button class="tab-btn active" data-filter="all">
+              <i class="fa-solid fa-list-ul"></i> All <span class="tab-count" id="countAll">0</span>
+            </button>
+            <button class="tab-btn" data-filter="income">
+              <i class="fa-solid fa-arrow-down"></i> Income <span class="tab-count" id="countIncome">0</span>
+            </button>
+            <button class="tab-btn" data-filter="expense">
+              <i class="fa-solid fa-arrow-up"></i> Expenses <span class="tab-count" id="countExpense">0</span>
+            </button>
+            <button class="tab-btn tab-waste" data-filter="waste">
+              <i class="fa-solid fa-fire"></i> Waste / Impulse Only <span class="tab-count" id="countWaste">0</span>
+            </button>
+          </div>
+
+          <div class="month-selector-wrap">
+            <label for="monthFilter"><i class="fa-regular fa-calendar"></i> Month:</label>
+            <input type="month" id="monthFilter" class="month-input">
+          </div>
+        </div>
+
+        <!-- Transactions Table Container -->
+        <div class="table-responsive">
+          <table class="custom-table" id="transactionsTable">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Recipient / Source ("Kisko Diya")</th>
+                <th>Category</th>
+                <th>Date & Time</th>
+                <th>Waste / Impulse?</th>
+                <th>Notes</th>
+                <th class="text-right">Amount</th>
+                <th class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="txTableBody">
+              <!-- Dynamically populated via app.js -->
+              <tr>
+                <td colspan="8" class="loading-cell">
+                  <div class="spinner"></div> Loading transactions...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="emptyState" class="empty-state-view" style="display: none;">
+          <div class="empty-icon-wrap">
+            <i class="fa-solid fa-wallet"></i>
+          </div>
+          <h4>No Transactions Found</h4>
+          <p>Add an income or expense entry to start tracking your cash flow and monthly savings goal.</p>
+          <button class="btn btn-primary" onclick="openTxModal('expense')">
+            <i class="fa-solid fa-plus"></i> Add Transaction Now
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <p>FinPortfolio • Built with Python & SQLite • Real-time Daily Goal & Cashflow Intelligence</p>
+    </div>
+  </footer>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Modal 1: Add/Edit Transaction -->
+  <div class="modal-backdrop" id="txModal" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="fa-solid fa-money-bill-transfer" id="modalHeaderIcon"></i>
+          <h3 id="modalTitle">Record Transaction</h3>
+        </div>
+        <button class="btn-close" id="btnCloseTxModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="txForm" class="modal-form">
+        <!-- Type Selection Toggle -->
+        <div class="type-toggle-group">
+          <button type="button" class="type-btn active btn-type-expense" id="btnTypeExpense" onclick="setTxType('expense')">
+            <i class="fa-solid fa-arrow-trend-down"></i> Expense (Kharcha)
+          </button>
+          <button type="button" class="type-btn btn-type-income" id="btnTypeIncome" onclick="setTxType('income')">
+            <i class="fa-solid fa-arrow-trend-up"></i> Income (Kamai)
+          </button>
+        </div>
+        <input type="hidden" id="txType" value="expense">
+
+        <!-- Amount Input -->
+        <div class="form-group">
+          <label for="txAmount">Amount (<span class="curr-symbol-label">₹</span>) <span class="required">*</span></label>
+          <div class="input-with-symbol">
+            <span class="currency-symbol modal-curr-symbol">₹</span>
+            <input type="number" id="txAmount" step="any" min="0.01" placeholder="0.00" required autofocus>
+          </div>
+        </div>
+
+        <!-- Party / Recipient Input ("Kisko diya") -->
+        <div class="form-group">
+          <label for="txParty" id="lblTxParty">Recipient / Kisko Diya? <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-user-tag input-icon"></i>
+            <input type="text" id="txParty" placeholder="e.g. Rahul, Zomato, Landlord, Amazon" required>
+          </div>
+          <span class="field-hint" id="hintTxParty">Name of the person, vendor, or place you paid</span>
+        </div>
+
+        <!-- Category & Waste Toggle Grid -->
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="txCategory">Category <span class="required">*</span></label>
+            <select id="txCategory" required>
+              <!-- Populated based on type -->
+            </select>
+          </div>
+
+          <div class="form-group waste-toggle-box" id="wasteToggleWrapper">
+            <label for="txIsWaste">Waste / Impulse Spend?</label>
+            <label class="switch-container">
+              <input type="checkbox" id="txIsWaste">
+              <span class="switch-slider"></span>
+              <span class="switch-text" id="wasteSwitchLabel">No (Necessary)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Date & Exact Time (Auto-filled with live time) -->
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="txDate">Date <span class="required">*</span></label>
+            <input type="date" id="txDate" required>
+          </div>
+          <div class="form-group">
+            <label for="txTime">Time (24h) <span class="required">*</span></label>
+            <input type="time" id="txTime" required>
+          </div>
+        </div>
+
+        <!-- Notes / Reason -->
+        <div class="form-group">
+          <label for="txNotes">Notes / Description</label>
+          <input type="text" id="txNotes" placeholder="e.g. Dinner with college friends, Flash sale purchase">
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-glass" id="btnCancelTx">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveTx">
+            <i class="fa-solid fa-check"></i> Save Transaction
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Set Monthly Savings Goal -->
+  <div class="modal-backdrop" id="goalModal" style="display: none;">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="fa-solid fa-bullseye text-indigo"></i>
+          <h3>Set Monthly Savings Goal</h3>
+        </div>
+        <button class="btn-close" id="btnCloseGoalModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="goalForm" class="modal-form">
+        <p class="modal-desc">
+          Har mahine kitna profit ya bachat karni hai set karein. Jaise hi aap kamai add karenge, remaining goal live update hoga!
+        </p>
+
+        <div class="form-group">
+          <label for="goalInputAmount">Target Savings (<span class="curr-symbol-label">₹</span>) <span class="required">*</span></label>
+          <div class="input-with-symbol">
+            <span class="currency-symbol modal-goal-curr-symbol">₹</span>
+            <input type="number" id="goalInputAmount" step="any" min="0" placeholder="10000" required>
+          </div>
+        </div>
+
+        <!-- Quick Preset Badges -->
+        <div class="preset-badges-group" id="goalPresetContainer">
+          <span class="preset-label">Quick Presets:</span>
+          <button type="button" class="preset-btn" onclick="setGoalPreset(5000)">₹5,000</button>
+          <button type="button" class="preset-btn active" onclick="setGoalPreset(10000)">₹10,000</button>
+          <button type="button" class="preset-btn" onclick="setGoalPreset(25000)">₹25,000</button>
+          <button type="button" class="preset-btn" onclick="setGoalPreset(50000)">₹50,000</button>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-glass" id="btnCancelGoal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveGoal">
+            <i class="fa-solid fa-floppy-disk"></i> Update Goal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Main JavaScript application -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

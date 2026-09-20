@@ -1,23 +1,34 @@
 import sqlite3
 import os
+import tempfile
 from datetime import datetime
 
 # Handle Vercel serverless environment (where root filesystem is read-only)
 if os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
-    DB_PATH = '/tmp/finance.db'
+    tmp_dir = '/tmp' if os.path.exists('/tmp') else tempfile.gettempdir()
+    DB_PATH = os.path.join(tmp_dir, 'finance.db')
 else:
     DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'finance.db')
 
-def get_db_connection():
-    # If on Vercel and /tmp/finance.db does not exist, initialize it
-    if not os.path.exists(DB_PATH):
-        init_db()
+def raw_connection():
+    """Create a direct SQLite connection without triggering recursion."""
+    # Ensure parent directory exists
+    parent_dir = os.path.dirname(DB_PATH)
+    if parent_dir and not os.path.exists(parent_dir):
+        os.makedirs(parent_dir, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
+def get_db_connection():
+    """Get connection, ensuring database schema is initialized if not present."""
+    if not os.path.exists(DB_PATH):
+        init_db()
+    return raw_connection()
+
 def init_db():
-    conn = get_db_connection()
+    """Initialize database tables and default data without infinite recursion."""
+    conn = raw_connection()
     cursor = conn.cursor()
     
     # Transactions table
@@ -52,7 +63,8 @@ def init_db():
     seed_demo_data_if_empty()
 
 def seed_demo_data_if_empty():
-    conn = get_db_connection()
+    """Seed initial starter transactions and monthly goal."""
+    conn = raw_connection()
     cursor = conn.cursor()
     
     cursor.execute('SELECT COUNT(*) as count FROM transactions')
